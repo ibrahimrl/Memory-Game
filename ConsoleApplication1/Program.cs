@@ -1,7 +1,5 @@
-﻿#pragma warning disable CS0612 // Suppress obsolete warnings for this example
-
-using Gtk;
-using Gdk;
+﻿using Gtk;
+using System;
 
 public class MemoryGame : Gtk.Window
 {
@@ -30,7 +28,7 @@ public class MemoryGame : Gtk.Window
                 font-family: 'Arial';
             }
             button#grey {
-                color: #808080; /* Use background-color for clarity */
+                background-color: #808080; /* Use for selected state */
             }
             label#gameSettingLabel {
                 background-color: transparent;
@@ -38,6 +36,17 @@ public class MemoryGame : Gtk.Window
                 font-size: 15px;
                 color: white;
                 padding: 5px 10px;
+            }
+            button#card {
+                border-radius: 10px;
+                background-color: #F5F5F5;
+                color: #333333;
+                font-size: 16px;
+            }
+            label#levelLabel {
+                font-size: 30px;
+                color: white;
+                margin-top: 50px; /* Adjusted for aesthetic spacing */
             }
         ");
         StyleContext.AddProviderForScreen(Gdk.Screen.Default, cssProvider, Gtk.StyleProviderPriority.Application);
@@ -81,8 +90,56 @@ public class MemoryGame : Gtk.Window
 
     private void OnStartClicked(object sender, EventArgs e)
     {
-        string setting = btnTimer.Name == "grey" ? "Timer" : "Limited Attempts";
-        Console.WriteLine($"Start with setting: {setting}");
+        foreach (Widget child in this.Children)
+        {
+            this.Remove(child);
+        }
+        InitializeGameLevel();
+    }
+
+    private void InitializeGameLevel()
+    {
+        VBox vbox = new VBox(false, 10);
+        Add(vbox);
+
+        Label levelLabel = new Label("LEVEL 1") { Name = "levelLabel" };
+        vbox.PackStart(levelLabel, false, false, 0);
+
+        Grid cardGrid = new Grid
+        {
+            RowSpacing = 10,
+            ColumnSpacing = 10,
+            Halign = Align.Center,
+            Valign = Align.Center
+        };
+        vbox.PackStart(cardGrid, true, true, 0);
+        InitializeCards(cardGrid, 8); // Initialize 8 cards for Level 1
+
+        ShowAll();
+    }
+
+    private void InitializeCards(Grid cardGrid, int numberOfCards)
+    {
+        int cardsPerRow = 4;
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < cardsPerRow; j++)
+            {
+                Button card = new Button { Name = "card" };
+                card.WidthRequest = 150;
+                card.HeightRequest = 200;
+                card.Clicked += OnCardClicked;
+                cardGrid.Attach(card, j, i, 1, 1);
+            }
+        }
+    }
+
+    private void OnCardClicked(object sender, EventArgs e)
+    {
+        Button card = sender as Button;
+        Random rnd = new Random();
+        int num = rnd.Next(100);
+        card.Label = num.ToString();
     }
 
     public static void Main()
