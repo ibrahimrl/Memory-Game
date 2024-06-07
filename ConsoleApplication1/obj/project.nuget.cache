@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "H4rTZM+JS5oSXUDZhJ88UZX6JSAs2vT0Nicf5Q1ENJInD/0w2eXsj0jVWypOobocTOxqGdq69Twwlpznk/apvw==",
+  "success": true,
+  "projectFilePath": "/Users/melek/Desktop/student-rahimlii/ConsoleApplication1/ConsoleApplication1.csproj",
+  "expectedPackageFiles": [
+    "/Users/melek/.nuget/packages/atksharp/3.24.24.95/atksharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/cairosharp/3.24.24.95/cairosharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/gdksharp/3.24.24.95/gdksharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/giosharp/3.24.24.95/giosharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/glibsharp/3.24.24.95/glibsharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/gtksharp/3.24.24.95/gtksharp.3.24.24.95.nupkg.sha512",
+    "/Users/melek/.nuget/packages/pangosharp/3.24.24.95/pangosharp.3.24.24.95.nupkg.sha512"
+  ],
+  "logs": []
+}
