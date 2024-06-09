@@ -11,9 +11,12 @@ public class MemoryGame : Gtk.Window
     private Gtk.Button btnAttempts;
     private Dictionary<Button, int> cardNumbers = new Dictionary<Button, int>();
     private Label lblTimer;
+    private Label lblAttempts;
     private uint timerId;
     private int remainingTime;
+    private int remainingAttempts;
     private bool isTimerMode = false;
+    private bool isAttemptMode = false;
     private VBox vbox;
     
     public MemoryGame() : base("Memory Game")
@@ -98,6 +101,9 @@ public class MemoryGame : Gtk.Window
         
         lblTimer = new Label("Remaining Time: 00:40") { Name = "timerLabel" };
         lblTimer.Hide();
+        
+        lblAttempts = new Label("Remaining Attempts: --") { Name = "attemptsLabel" };
+        lblAttempts.Hide();
 
         ShowAll();
     }
@@ -107,6 +113,7 @@ public class MemoryGame : Gtk.Window
         btnTimer.Name = setting == "Timer" ? "grey" : "default";
         btnAttempts.Name = setting == "Limited Attempts" ? "grey" : "default";
         isTimerMode = setting == "Timer";
+        isAttemptMode = setting == "Limited Attempts";
     }
     
     private void OnStartClicked(object sender, EventArgs e)
@@ -116,12 +123,18 @@ public class MemoryGame : Gtk.Window
         if (isTimerMode) 
         {
             StartTimer(40);  // Start with 40 seconds in level 1
-
             vbox.PackStart(lblTimer, false, false, 0);
             Alignment timerAlign = new Alignment(1.0f, 0.0f, 0, 0);
             timerAlign.Add(vbox);
             Add(timerAlign);
             lblTimer.Show();
+        }
+        else if (isAttemptMode)
+        {
+            remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel); // Set attempts equal to the number of cards
+            lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
+            lblAttempts.Show();
+            vbox.PackStart(lblAttempts, false, false, 0);  // Ensure attempts label is packed in vbox and shown
         }
     }
     
@@ -144,7 +157,7 @@ public class MemoryGame : Gtk.Window
 
     private void InitializeGameLevel(int level)
     {
-        VBox vbox = new VBox(false, 10) { MarginTop = 20 };
+        vbox = new VBox(false, 10) { MarginTop = 20 };
         Add(vbox);
 
         Label levelLabel = new Label($"LEVEL {level}") { Name = "levelLabel" };
@@ -174,7 +187,13 @@ public class MemoryGame : Gtk.Window
                 vbox.Destroy();
                 currentLevel++;
                 InitializeGameLevel(currentLevel);
-                ResetTimer(20 * level);  // Add 20 seconds for each new level
+                if (isTimerMode)
+                    ResetTimer(20 * level);  // Add 20 seconds for each new level
+                else if (isAttemptMode)
+                {
+                    remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel);
+                    lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
+                }
             };
             vbox.PackEnd(nextLevelButton, false, false, 0);
         }
@@ -188,6 +207,14 @@ public class MemoryGame : Gtk.Window
             timerAlign.Add(vbox);
             Add(timerAlign);
             lblTimer.Show();
+        }
+        else if (isAttemptMode)
+        {
+            vbox.PackStart(lblAttempts, false, false, 0);
+            Alignment attemotAlign = new Alignment(1.0f, 0.0f, 0, 0);
+            attemotAlign.Add(vbox);
+            Add(attemotAlign);
+            lblAttempts.Show();
         }
 
         ShowAll();
