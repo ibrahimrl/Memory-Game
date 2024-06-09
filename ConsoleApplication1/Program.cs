@@ -10,6 +10,8 @@ public class MemoryGame : Gtk.Window
     private Gtk.Button btnTimer;
     private Gtk.Button btnAttempts;
     private Dictionary<Button, int> cardNumbers = new Dictionary<Button, int>();
+    private Button previousCard = null;
+    private int previousCardNumber = -1;
     private Label lblTimer;
     private Label lblAttempts;
     private uint timerId;
@@ -147,6 +149,9 @@ public class MemoryGame : Gtk.Window
             // vbox.Remove(child);
             
         }
+        previousCard = null;
+        previousCardNumber = -1;
+        
         // If timer was running, stop it
         if (timerId != 0)
         {
@@ -335,19 +340,47 @@ public class MemoryGame : Gtk.Window
     private void OnCardClicked(object sender, EventArgs e)
     {
         Button card = sender as Button;
-        if (!cardNumbers.TryGetValue(card, out int num))
+        if (!cardNumbers.TryGetValue(card, out int currentCardNumber))
         {
             Random rnd = new Random();
-            num = rnd.Next(100);
-            cardNumbers[card] = num;
+            currentCardNumber = rnd.Next(100);
+            cardNumbers[card] = currentCardNumber;
         }
 
         // Update the card's display to show the number
         Image cardImage = card.Child as Image;
         if (cardImage != null)
         {
-            Gdk.Pixbuf numberPixbuf = CreateTextPixbuf(num.ToString(), card.WidthRequest, card.HeightRequest);
+            Gdk.Pixbuf numberPixbuf = CreateTextPixbuf(currentCardNumber.ToString(), card.WidthRequest, card.HeightRequest);
             cardImage.Pixbuf = numberPixbuf;
+        }
+        
+        if (isAttemptMode)
+        {
+            if (previousCard != null && previousCard != card) // Ensure it's a different card
+            {
+                // Check if it matches the previous card
+                if (previousCardNumber != currentCardNumber)
+                {
+                    remainingAttempts--;
+                    lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
+
+                    if (remainingAttempts <= 0)
+                    {
+                        GameOver();
+                    }
+                }
+
+                // Reset for the next attempt
+                previousCard = null;
+                previousCardNumber = -1;
+            }
+            else
+            {
+                // Set the current card as the previous card for the next attempt
+                previousCard = card;
+                previousCardNumber = currentCardNumber;
+            }
         }
     }
 
