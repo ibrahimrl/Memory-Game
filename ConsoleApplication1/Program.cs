@@ -1,15 +1,21 @@
 ﻿using Gtk;
 using System;
+using System.Collections.Generic;
 
 public class MemoryGame : Gtk.Window
 {
+    
     private int currentLevel = 1;
     private const int CardsIncrementPerLevel = 4;
     private Gtk.Button btnTimer;
     private Gtk.Button btnAttempts;
-    private Label lblCurrentSetting;
     private Dictionary<Button, int> cardNumbers = new Dictionary<Button, int>();
-
+    private Label lblTimer;
+    private uint timerId;
+    private int remainingTime;
+    private bool isTimerMode = false;
+    private VBox vbox;
+    
     public MemoryGame() : base("Memory Game")
     {
         SetDefaultSize(1350, 800);
@@ -33,7 +39,7 @@ public class MemoryGame : Gtk.Window
             button#grey {
                 color: #808080; /* Use for selected state */
             }
-            label#gameSettingLabel {
+            label#gameSettingLabel, label#timerLabel {
                 background-color: transparent;
                 border-radius: 0;
                 font-size: 15px;
@@ -60,7 +66,7 @@ public class MemoryGame : Gtk.Window
         ");
         StyleContext.AddProviderForScreen(Gdk.Screen.Default, cssProvider, Gtk.StyleProviderPriority.Application);
 
-        VBox vbox = new VBox(false, 0);
+        vbox = new VBox(false, 0);
         Alignment vboxAlign = new Alignment(0.5f, 0.5f, 0, 0);
         vboxAlign.Add(vbox);
         Add(vboxAlign);
@@ -70,12 +76,12 @@ public class MemoryGame : Gtk.Window
         alignStart.Add(btnStart);
         btnStart.Clicked += OnStartClicked;
         vbox.PackStart(alignStart, false, false, 10);
-
+        
         Label lblSetting = new Label("CHOOSE A GAME SETTING") { Name = "gameSettingLabel" };
         Alignment alignLabel = new Alignment(0.5f, 0.5f, 0, 0);
         alignLabel.Add(lblSetting);
         vbox.PackStart(alignLabel, false, false, 10);
-
+        
         HBox hbox = new HBox(true, 10);
         btnTimer = new Button("Timer");
         btnAttempts = new Button("Limited Attempts");
@@ -83,29 +89,59 @@ public class MemoryGame : Gtk.Window
         btnAttempts.Clicked += (sender, e) => ToggleButton(sender, "Limited Attempts");
         hbox.PackStart(btnTimer, true, true, 0);
         hbox.PackStart(btnAttempts, true, true, 0);
-
+        vbox.PackStart(hbox, false, false, 10);
+        
         Alignment alignHbox = new Alignment(0.5f, 0.5f, 0, 0);
         alignHbox.Add(hbox);
         vbox.PackStart(alignHbox, false, false, 10);
+        
+        
+        lblTimer = new Label("Remaining Time: 00:40") { Name = "timerLabel" };
+        lblTimer.Hide();
 
         ShowAll();
     }
-
+    
     private void ToggleButton(object sender, string setting)
     {
         btnTimer.Name = setting == "Timer" ? "grey" : "default";
         btnAttempts.Name = setting == "Limited Attempts" ? "grey" : "default";
+        isTimerMode = setting == "Timer";
     }
-
+    
     private void OnStartClicked(object sender, EventArgs e)
     {
+        ResetGameEnvironment();
+        InitializeGameLevel(currentLevel);
+        if (isTimerMode) 
+        {
+            StartTimer(40);  // Start with 40 seconds in level 1
+
+            vbox.PackStart(lblTimer, false, false, 0);
+            Alignment timerAlign = new Alignment(1.0f, 0.0f, 0, 0);
+            timerAlign.Add(vbox);
+            Add(timerAlign);
+            lblTimer.Show();
+        }
+    }
+    
+    private void ResetGameEnvironment()
+    {
+        // Remove all children and reset environment
         foreach (Widget child in this.Children)
         {
             this.Remove(child);
+            // vbox.Remove(child);
+            
         }
-        InitializeGameLevel(currentLevel);
+        // If timer was running, stop it
+        if (timerId != 0)
+        {
+            GLib.Source.Remove(timerId);
+            timerId = 0;
+        }
     }
-    
+
     private void InitializeGameLevel(int level)
     {
         VBox vbox = new VBox(false, 10) { MarginTop = 20 };
@@ -130,21 +166,76 @@ public class MemoryGame : Gtk.Window
         alignGrid.Add(cardGrid);
         vbox.PackStart(alignGrid, true, true, 0);
 
-        if (level < 5) {
+        if (level < 5)
+        {
             Button nextLevelButton = new Button("Next Level") { Name = "nextLevel" };
-            nextLevelButton.Clicked += (sender, e) => {
+            nextLevelButton.Clicked += (sender, e) =>
+            {
                 vbox.Destroy();
                 currentLevel++;
                 InitializeGameLevel(currentLevel);
+                ResetTimer(20 * level);  // Add 20 seconds for each new level
             };
             vbox.PackEnd(nextLevelButton, false, false, 0);
+        }
+        
+        if (isTimerMode) 
+        {
+            StartTimer(40);  // Start with 40 seconds in level 1
+
+            vbox.PackStart(lblTimer, false, false, 0);
+            Alignment timerAlign = new Alignment(1.0f, 0.0f, 0, 0);
+            timerAlign.Add(vbox);
+            Add(timerAlign);
+            lblTimer.Show();
         }
 
         ShowAll();
     }
+    
+    private void StartTimer(int seconds)
+    {
+        remainingTime = seconds;
+        lblTimer.Text = $"Remaining Time: {remainingTime / 60:00}:{(remainingTime % 60):00}";
+        if (timerId != 0)
+            GLib.Source.Remove(timerId);
+        timerId = GLib.Timeout.Add(1000, new GLib.TimeoutHandler(UpdateTimer));
+    }
+    
+    private bool UpdateTimer()
+    {
+        remainingTime--;
+        lblTimer.Text = $"Remaining Time: {remainingTime / 60:00}:{(remainingTime % 60):00}";
+        if (remainingTime <= 0)
+        {
+            GLib.Source.Remove(timerId);
+            timerId = 0;
+            GameOver();  // Implement this method to handle game over scenario
+            return false;
+        }
+        return true;
+    }
+    
+    private void GameOver()
+    {
+        MessageDialog dialog = new MessageDialog(this, DialogFlags.Modal, MessageType.Info, ButtonsType.Ok, "Time's up! Game over.");
+        dialog.Run();
+        dialog.Destroy();
+        // Application.Quit();
+        ResetGameEnvironment();
+        new MemoryGame();
+    }
 
-    private int CalculateCardsPerRow(int level) {
-        switch (level) {
+    private void ResetTimer(int additionalTime)
+    {
+        GLib.Source.Remove(timerId);
+        StartTimer(remainingTime + additionalTime);
+    }
+
+    private int CalculateCardsPerRow(int level)
+    {
+        switch (level)
+        {
             case 1: return 3;
             case 2: return 6;
             case 3: return 6;
@@ -154,8 +245,10 @@ public class MemoryGame : Gtk.Window
         }
     }
 
-    private int CalculateNumberOfRows(int level) {
-        switch (level) {
+    private int CalculateNumberOfRows(int level)
+    {
+        switch (level)
+        {
             case 1:
             case 2: return 2;
             case 3:
@@ -166,28 +259,27 @@ public class MemoryGame : Gtk.Window
     }
     
     private (int width, int height) CalculateCardSize(int cardsPerRow, int numberOfRows)
-    {
-        int maxWidth = 1000;  // Maximum total width available
-        int maxHeight = 500;  // Maximum total height available
-        int horizontalSpacing = 10;  // Space between columns
-        int verticalSpacing = 10;    // Space between rows
-        int maxCardWidth = (maxWidth - (horizontalSpacing * (cardsPerRow - 1))) / cardsPerRow;
-        int maxCardHeight = (maxHeight - (verticalSpacing * (numberOfRows - 1))) / numberOfRows;
+     {
+         int maxWidth = 1000;  // Maximum total width available
+         int maxHeight = 500;  // Maximum total height available
+         int horizontalSpacing = 10;  // Space between columns
+         int verticalSpacing = 10;    // Space between rows
+         int maxCardWidth = (maxWidth - (horizontalSpacing * (cardsPerRow - 1))) / cardsPerRow;
+         int maxCardHeight = (maxHeight - (verticalSpacing * (numberOfRows - 1))) / numberOfRows;
 
-        // Ensure cards are proportionally sized, assuming a card ratio of approximately 3:4 (width:height)
-        int finalCardWidth = maxCardWidth;
-        int finalCardHeight = finalCardWidth * 4 / 3;
+         // Ensure cards are proportionally sized, assuming a card ratio of approximately 3:4 (width:height)
+         int finalCardWidth = maxCardWidth;
+         int finalCardHeight = finalCardWidth * 4 / 3;
 
-        if (finalCardHeight > maxCardHeight)
-        {
-            finalCardHeight = maxCardHeight;
-            finalCardWidth = finalCardHeight * 3 / 4;
-        }
+         if (finalCardHeight > maxCardHeight)
+         {
+             finalCardHeight = maxCardHeight;
+             finalCardWidth = finalCardHeight * 3 / 4;
+         }
 
-        return (finalCardWidth, finalCardHeight);
-    }
+         return (finalCardWidth, finalCardHeight);
+     }
 
-    
     private void InitializeCards(Grid cardGrid, int rows, int cardsPerRow)
     {
         (int cardWidth, int cardHeight) = CalculateCardSize(10, 3);
@@ -195,8 +287,10 @@ public class MemoryGame : Gtk.Window
         Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
         Gdk.Pixbuf cardBackPixbuf = originalPixbuf.ScaleSimple(cardWidth, cardHeight, Gdk.InterpType.Bilinear);
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cardsPerRow; j++) {
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cardsPerRow; j++)
+            {
                 Button card = new Button() { Name = "card" };
                 card.WidthRequest = cardWidth;
                 card.HeightRequest = cardHeight;
@@ -210,7 +304,7 @@ public class MemoryGame : Gtk.Window
             }
         }
     }
-    
+
     private void OnCardClicked(object sender, EventArgs e)
     {
         Button card = sender as Button;
@@ -229,7 +323,7 @@ public class MemoryGame : Gtk.Window
             cardImage.Pixbuf = numberPixbuf;
         }
     }
-    
+
     private Gdk.Pixbuf CreateTextPixbuf(string text, int width, int height)
     {
         // Create a new Pixbuf with a white background
@@ -242,7 +336,7 @@ public class MemoryGame : Gtk.Window
             using (Cairo.Context cr = new Cairo.Context(surface))
             {
                 // Configure text properties
-                cr.SetSourceRGB(0, 0, 0); 
+                cr.SetSourceRGB(0, 0, 0);
                 cr.SelectFontFace("Arial", Cairo.FontSlant.Normal, Cairo.FontWeight.Bold);
                 cr.SetFontSize(24);
 
@@ -250,7 +344,7 @@ public class MemoryGame : Gtk.Window
                 Cairo.TextExtents extents = cr.TextExtents(text);
                 double xText = (width - extents.Width) / 2 - extents.XBearing;
                 double yText = (height - extents.Height) / 2 - extents.YBearing;
-                
+
                 cr.MoveTo(xText, yText);
                 cr.ShowText(text);
                 cr.Fill();
@@ -259,7 +353,6 @@ public class MemoryGame : Gtk.Window
 
         return pixbuf;
     }
-
 
     public static void Main()
     {
