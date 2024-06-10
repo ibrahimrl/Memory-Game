@@ -5,10 +5,12 @@ using System.Collections.Generic;
 public class Game
 {
     public int[] CardValues { get; private set; }
+    public bool[] MatchedCards { get; private set; }
 
     public Game(int numberOfCards)
     {
         CardValues = new int[numberOfCards];
+        MatchedCards = new bool[numberOfCards];
         InitializeCards(numberOfCards);
     }
     
@@ -64,6 +66,7 @@ public class MemoryGame : Gtk.Window
     private int remainingAttempts;
     private bool isTimerMode = false;
     private bool isAttemptMode = false;
+    private bool isWaiting = false;
     private VBox vbox;
     
     public MemoryGame() : base("Memory Game")
@@ -85,6 +88,7 @@ public class MemoryGame : Gtk.Window
                 padding: 10px 20px;
                 font-size: 20px;
                 font-family: 'Arial';
+                border: none;
             }
             button#grey {
                 color: #808080; /* Use for selected state */
@@ -178,7 +182,7 @@ public class MemoryGame : Gtk.Window
         }
         else if (isAttemptMode)
         {
-            remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel); // Set attempts equal to the number of cards
+            remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel) * 2; // Set attempts 2 times more than the number of cards in level 1
             lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
             lblAttempts.Show();
             vbox.PackStart(lblAttempts, false, false, 0);  // Ensure attempts label is packed in vbox and shown
@@ -232,29 +236,11 @@ public class MemoryGame : Gtk.Window
 
         alignGrid.Add(cardGrid);
         vbox.PackStart(alignGrid, true, true, 0);
-
-        if (level < 5)
-        {
-            Button nextLevelButton = new Button("Next Level") { Name = "nextLevel" };
-            nextLevelButton.Clicked += (sender, e) =>
-            {
-                vbox.Destroy();
-                currentLevel++;
-                InitializeGameLevel(currentLevel);
-                if (isTimerMode)
-                    ResetTimer(20 * level);  // Add 20 seconds for each new level
-                else if (isAttemptMode)
-                {
-                    remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel);
-                    lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
-                }
-            };
-            vbox.PackEnd(nextLevelButton, false, false, 0);
-        }
+        
         
         if (isTimerMode) 
         {
-            StartTimer(40);  // Start with 40 seconds in level 1
+            StartTimer(40 + 30 * (level - 1) + 30 * (level - 2));  // Start with 40 seconds in level 1
 
             vbox.PackStart(lblTimer, false, false, 0);
             Alignment timerAlign = new Alignment(1.0f, 0.0f, 0, 0);
@@ -264,6 +250,8 @@ public class MemoryGame : Gtk.Window
         }
         else if (isAttemptMode)
         {
+            remainingAttempts = level > 2 ? 3 * numberOfCards : 2 * numberOfCards; 
+            lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
             vbox.PackStart(lblAttempts, false, false, 0);
             Alignment attemotAlign = new Alignment(1.0f, 0.0f, 0, 0);
             attemotAlign.Add(vbox);
@@ -302,7 +290,6 @@ public class MemoryGame : Gtk.Window
         MessageDialog dialog = new MessageDialog(this, DialogFlags.Modal, MessageType.Info, ButtonsType.Ok, "Time's up! Game over.");
         dialog.Run();
         dialog.Destroy();
-        // Application.Quit();
         ResetGameEnvironment();
         new MemoryGame();
     }
@@ -360,13 +347,21 @@ public class MemoryGame : Gtk.Window
 
          return (finalCardWidth, finalCardHeight);
      }
+    
+    private Gdk.Pixbuf CreateCardBackPixbuf(int width, int height)
+    {
+        Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
+        return originalPixbuf.ScaleSimple(width, height, Gdk.InterpType.Bilinear);
+    }
 
     private void InitializeCards(Grid cardGrid, int rows, int cardsPerRow)
     {
-        (int cardWidth, int cardHeight) = CalculateCardSize(10, 3);
+        (int cardWidth, int cardHeight) = CalculateCardSize(CalculateCardsPerRow(5), CalculateNumberOfRows(5));
 
-        Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
-        Gdk.Pixbuf cardBackPixbuf = originalPixbuf.ScaleSimple(cardWidth, cardHeight, Gdk.InterpType.Bilinear);
+        // Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
+        // Gdk.Pixbuf cardBackPixbuf = originalPixbuf.ScaleSimple(cardWidth, cardHeight, Gdk.InterpType.Bilinear);
+        
+        Gdk.Pixbuf cardBackPixbuf = CreateCardBackPixbuf(cardWidth, cardHeight);
 
         for (int i = 0; i < rows; i++)
         {
@@ -377,7 +372,6 @@ public class MemoryGame : Gtk.Window
                 card.WidthRequest = cardWidth;
                 card.HeightRequest = cardHeight;
                 card.Data.Add("index", index);  // Store index in the Button
-                // card.Clicked += OnCardClicked;
 
                 Image cardImage = new Image(cardBackPixbuf);
                 card.Add(cardImage);
@@ -391,10 +385,20 @@ public class MemoryGame : Gtk.Window
 
     private void OnCardClicked(object sender, EventArgs e)
     {
+        if (isWaiting) return;  // Prevent interaction while waiting
+        
         Button card = sender as Button;
         
         int index = (int)card.Data["index"];
         int cardValue = game.CardValues[index];
+        
+
+        Label label = new Label(cardValue.ToString());
+        label.ModifyFont(Pango.FontDescription.FromString("Arial Bold 15"));
+        
+
+        card.Add(label);
+        card.ShowAll();
 
         // Update the card's display to show the number
         Image cardImage = card.Child as Image;
@@ -404,32 +408,110 @@ public class MemoryGame : Gtk.Window
             cardImage.Pixbuf = numberPixbuf;
         }
         
-        if (isAttemptMode)
+        if (previousCard == null)
         {
-            if (previousCard != null && previousCard != card) // Ensure it's a different card
+            previousCard = card;
+            previousCardNumber = cardValue;
+        }
+        else if (previousCard != card)
+        {
+            if (previousCardNumber != cardValue)
             {
-                // Check if it matches the previous card
-                if (previousCardNumber != cardValue)
+                isWaiting = true;
+                // Delay before flipping cards back
+                GLib.Timeout.Add(1000, new GLib.TimeoutHandler(() =>
                 {
-                    remainingAttempts--;
-                    lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
-
-                    if (remainingAttempts <= 0)
+                    // Flip both cards back to the hidden state
+                    FlipCardBack(previousCard);
+                    FlipCardBack(card);
+        
+                    if (isAttemptMode)
                     {
-                        GameOver();
+                        remainingAttempts--;
+                        lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
+                        if (remainingAttempts <= 0)
+                        {
+                            GameOver();
+                        }
                     }
-                }
-
-                // Reset for the next attempt
-                previousCard = null;
-                previousCardNumber = -1;
+        
+                    previousCard = null;  // Reset for next try
+                    isWaiting = false;
+                    return false; // Stop the timeout from repeating
+                }));
             }
             else
             {
-                // Set the current card as the previous card for the next attempt
-                previousCard = card;
-                previousCardNumber = cardValue;
+                game.MatchedCards[index] = true;
+                game.MatchedCards[(int)previousCard.Data["index"]] = true;
+                previousCard = null;
+
+                CheckGameProgress();
+                
             }
+        }
+    }
+    
+    private bool AllCardsMatched()
+    {
+    foreach (bool matched in game.MatchedCards)
+    {
+        if (!matched) return false;
+    }
+    return true;
+    }
+    
+    private void CheckGameProgress()
+    {
+        if (AllCardsMatched())
+        {
+            if (currentLevel == 5)
+            {
+                ShowGameWonMessage();
+            }
+            else
+            {
+                AddNextLevelButton();
+            }
+        }
+    }
+    
+    private void ShowGameWonMessage()
+    {
+        MessageDialog winDialog = new MessageDialog(
+            this,
+            DialogFlags.Modal,
+            MessageType.Info,
+            ButtonsType.Ok,
+            "Congratulations! You've won the game!"
+        );
+        winDialog.Run();
+        winDialog.Destroy();
+        ResetGameEnvironment();
+        new MemoryGame();
+    }
+
+
+    private void AddNextLevelButton()
+    {
+    Button nextLevelButton = new Button("Next Level") { Name = "nextLevel" };
+    nextLevelButton.Clicked += (sender, e) =>
+    {
+        vbox.Destroy();
+        currentLevel++;
+        InitializeGameLevel(currentLevel);
+    };
+    vbox.PackEnd(nextLevelButton, false, false, 0);
+    ShowAll();
+}
+    
+    private void FlipCardBack(Button card)
+    {
+        Image cardImage = card.Child as Image;
+        if (cardImage != null)
+        {
+            Gdk.Pixbuf backPixbuf = new Gdk.Pixbuf("img/Card.jpg", card.WidthRequest, card.HeightRequest);
+            cardImage.Pixbuf = backPixbuf;
         }
     }
 
