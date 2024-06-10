@@ -2,9 +2,66 @@
 using System;
 using System.Collections.Generic;
 
+public class Game
+{
+    public int[] CardValues { get; private set; }
+
+    public Game(int numberOfCards)
+    {
+        CardValues = new int[numberOfCards];
+        InitializeCards(numberOfCards);
+    }
+    
+    private void InitializeCards(int numberOfCards)
+    {
+        int halfNumberOfCards = numberOfCards / 2;
+        Random rng = new Random();
+        HashSet<int> usedNumbers = new HashSet<int>(); // To avoid repeating numbers across pairs
+        
+        for (int i = 0; i < halfNumberOfCards; i++)
+        {
+            int newNumber;
+            do
+            {
+                newNumber = rng.Next(10, 100);
+            } while (usedNumbers.Contains(newNumber)); // Ensure each number is unique within pairs
+
+            usedNumbers.Add(newNumber);
+            CardValues[i] = newNumber;
+            CardValues[i + halfNumberOfCards] = newNumber;
+        }
+        
+        ShuffleCards(CardValues);
+    }
+
+    // private void ShuffleCards(int[] array)
+    // {
+    //     Random rng = new Random();
+    //     int n = array.Length;
+    //     while (n > 1)
+    //     {
+    //         int k = rng.Next(n--);
+    //         (array[n], array[k]) = (array[k], array[n]);
+    //     }
+    // }
+    
+    private void ShuffleCards(int[] array)
+    {
+        Random rng = new Random();
+        for (int i = array.Length - 1; i > 0; i--)
+        {
+            int swapIndex = rng.Next(i + 1);  // Generate a random position up to and including the element i
+            (array[i], array[swapIndex]) = (array[swapIndex], array[i]);
+        }
+    }
+
+}
+
+
 public class MemoryGame : Gtk.Window
 {
     
+    private Game game;
     private int currentLevel = 1;
     private const int CardsIncrementPerLevel = 4;
     private Gtk.Button btnTimer;
@@ -162,6 +219,7 @@ public class MemoryGame : Gtk.Window
 
     private void InitializeGameLevel(int level)
     {
+        
         vbox = new VBox(false, 10) { MarginTop = 20 };
         Add(vbox);
 
@@ -170,6 +228,9 @@ public class MemoryGame : Gtk.Window
 
         int cardsPerRow = CalculateCardsPerRow(level);
         int numRows = CalculateNumberOfRows(level);
+        int numberOfCards = cardsPerRow * numRows;
+        
+        game = new Game(numberOfCards);
 
         // Use an Alignment to center the Grid
         Alignment alignGrid = new Alignment(0.5f, 0.5f, 0, 0) { Name = "cardGridAlignment" };
@@ -323,9 +384,12 @@ public class MemoryGame : Gtk.Window
         {
             for (int j = 0; j < cardsPerRow; j++)
             {
-                Button card = new Button() { Name = "card" };
+                int index = i * cardsPerRow + j;
+                Button card = new Button() { Name = "card"};
                 card.WidthRequest = cardWidth;
                 card.HeightRequest = cardHeight;
+                card.Data.Add("index", index);  // Store index in the Button
+                // card.Clicked += OnCardClicked;
 
                 Image cardImage = new Image(cardBackPixbuf);
                 card.Add(cardImage);
@@ -340,18 +404,22 @@ public class MemoryGame : Gtk.Window
     private void OnCardClicked(object sender, EventArgs e)
     {
         Button card = sender as Button;
-        if (!cardNumbers.TryGetValue(card, out int currentCardNumber))
-        {
-            Random rnd = new Random();
-            currentCardNumber = rnd.Next(100);
-            cardNumbers[card] = currentCardNumber;
-        }
+        
+        int index = (int)card.Data["index"];
+        int cardValue = game.CardValues[index];
+        
+        // if (!cardNumbers.TryGetValue(card, out int currentCardNumber))
+        // {
+        //     Random rnd = new Random();
+        //     currentCardNumber = rnd.Next(100);
+        //     cardNumbers[card] = currentCardNumber;
+        // }
 
         // Update the card's display to show the number
         Image cardImage = card.Child as Image;
         if (cardImage != null)
         {
-            Gdk.Pixbuf numberPixbuf = CreateTextPixbuf(currentCardNumber.ToString(), card.WidthRequest, card.HeightRequest);
+            Gdk.Pixbuf numberPixbuf = CreateTextPixbuf(cardValue.ToString(), card.WidthRequest, card.HeightRequest);
             cardImage.Pixbuf = numberPixbuf;
         }
         
@@ -360,7 +428,7 @@ public class MemoryGame : Gtk.Window
             if (previousCard != null && previousCard != card) // Ensure it's a different card
             {
                 // Check if it matches the previous card
-                if (previousCardNumber != currentCardNumber)
+                if (previousCardNumber != cardValue)
                 {
                     remainingAttempts--;
                     lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
@@ -379,7 +447,7 @@ public class MemoryGame : Gtk.Window
             {
                 // Set the current card as the previous card for the next attempt
                 previousCard = card;
-                previousCardNumber = currentCardNumber;
+                previousCardNumber = cardValue;
             }
         }
     }
