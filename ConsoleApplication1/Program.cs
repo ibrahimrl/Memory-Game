@@ -33,17 +33,6 @@ public class Game
         
         ShuffleCards(CardValues);
     }
-
-    // private void ShuffleCards(int[] array)
-    // {
-    //     Random rng = new Random();
-    //     int n = array.Length;
-    //     while (n > 1)
-    //     {
-    //         int k = rng.Next(n--);
-    //         (array[n], array[k]) = (array[k], array[n]);
-    //     }
-    // }
     
     private void ShuffleCards(int[] array)
     {
@@ -54,7 +43,6 @@ public class Game
             (array[i], array[swapIndex]) = (array[swapIndex], array[i]);
         }
     }
-
 }
 
 
@@ -407,13 +395,6 @@ public class MemoryGame : Gtk.Window
         
         int index = (int)card.Data["index"];
         int cardValue = game.CardValues[index];
-        
-        // if (!cardNumbers.TryGetValue(card, out int currentCardNumber))
-        // {
-        //     Random rnd = new Random();
-        //     currentCardNumber = rnd.Next(100);
-        //     cardNumbers[card] = currentCardNumber;
-        // }
 
         // Update the card's display to show the number
         Image cardImage = card.Child as Image;
