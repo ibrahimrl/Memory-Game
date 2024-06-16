@@ -47,7 +47,6 @@ public class Game
     }
 }
 
-
 public class MemoryGame : Gtk.Window
 {
     
@@ -61,7 +60,7 @@ public class MemoryGame : Gtk.Window
     private int previousCardNumber = -1;
     private Label lblTimer;
     private Label lblAttempts;
-    private uint timerId;
+    private uint timerId = 0;
     private int remainingTime;
     private int remainingAttempts;
     private bool isTimerMode = false;
@@ -143,8 +142,8 @@ public class MemoryGame : Gtk.Window
         btnAttempts.Clicked += (sender, e) => ToggleButton(sender, "Limited Attempts");
         hbox.PackStart(btnTimer, true, true, 0);
         hbox.PackStart(btnAttempts, true, true, 0);
-        vbox.PackStart(hbox, false, false, 10);
         
+        vbox.Remove(hbox);
         Alignment alignHbox = new Alignment(0.5f, 0.5f, 0, 0);
         alignHbox.Add(hbox);
         vbox.PackStart(alignHbox, false, false, 10);
@@ -173,31 +172,30 @@ public class MemoryGame : Gtk.Window
         InitializeGameLevel(currentLevel);
         if (isTimerMode) 
         {
+            if (lblTimer.Parent != null)
+                ((Container)lblTimer.Parent).Remove(lblTimer);
             StartTimer(40);  // Start with 40 seconds in level 1
             vbox.PackStart(lblTimer, false, false, 0);
-            Alignment timerAlign = new Alignment(1.0f, 0.0f, 0, 0);
-            timerAlign.Add(vbox);
-            Add(timerAlign);
             lblTimer.Show();
         }
         else if (isAttemptMode)
         {
+            if (lblAttempts.Parent != null)
+                ((Container)lblAttempts.Parent).Remove(lblAttempts);
             remainingAttempts = CalculateCardsPerRow(currentLevel) * CalculateNumberOfRows(currentLevel) * 2; // Set attempts 2 times more than the number of cards in level 1
             lblAttempts.Text = $"Remaining Attempts: {remainingAttempts}";
+            vbox.PackStart(lblAttempts, false, false, 0);
             lblAttempts.Show();
-            vbox.PackStart(lblAttempts, false, false, 0);  // Ensure attempts label is packed in vbox and shown
         }
     }
     
     private void ResetGameEnvironment()
     {
-        // Remove all children and reset environment
+        
         foreach (Widget child in this.Children)
-        {
-            this.Remove(child);
-            // vbox.Remove(child);
-            
-        }
+            if (child.Parent != null)
+                ((Container)child.Parent).Remove(child);
+        
         previousCard = null;
         previousCardNumber = -1;
         
@@ -208,7 +206,7 @@ public class MemoryGame : Gtk.Window
             timerId = 0;
         }
     }
-
+    
     private void InitializeGameLevel(int level)
     {
         
@@ -392,14 +390,14 @@ public class MemoryGame : Gtk.Window
         int index = (int)card.Data["index"];
         int cardValue = game.CardValues[index];
         
-
+    
         Label label = new Label(cardValue.ToString());
         label.ModifyFont(Pango.FontDescription.FromString("Arial Bold 15"));
         
-
+    
         card.Add(label);
         card.ShowAll();
-
+    
         // Update the card's display to show the number
         Image cardImage = card.Child as Image;
         if (cardImage != null)
@@ -445,7 +443,7 @@ public class MemoryGame : Gtk.Window
                 game.MatchedCards[index] = true;
                 game.MatchedCards[(int)previousCard.Data["index"]] = true;
                 previousCard = null;
-
+    
                 CheckGameProgress();
                 
             }
