@@ -47,12 +47,6 @@ Build the project:
 dotnet build
  ```
 
-
-3. **Install Dependencies**: Install the required Python packages listed in `requirements.txt` using pip:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
 ## Usage
 
 To start the game, navigate to the project directory and run:
