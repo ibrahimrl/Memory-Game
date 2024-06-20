@@ -11,9 +11,9 @@ This memory matching game is a fun and engaging project developed in C# using Gt
 
 The project is structured into several key components, utilizing various classes and libraries:
 
-1. (Game Class): Handles the logic for card initialization, shuffling, and state management of cards (matched or unmatched).
+1. Game Class: Handles the logic for card initialization, shuffling, and state management of cards (matched or unmatched).
 
-2. (MemoryGame Class):  A subclass of Gtk.Window, it is the main entry point for the GTK application. It manages the UI, game settings, and transitions between different game levels.
+2. MemoryGame Class:  A subclass of Gtk.Window, it is the main entry point for the GTK application. It manages the UI, game settings, and transitions between different game levels.
 
 3. UI Components:
     - Windows and Dialogs: Manages various GTK windows and dialog components that display the game's levels, settings, and notifications..
@@ -34,7 +34,7 @@ To run this project, ensure you have set up the required environment:
 Clone the repository:
   ```bash
   git clone https://gitlab.mff.cuni.cz/teaching/nprg031/2324-summer/student-rahimlii.git
-  cd cd student-rahimlii/ConsoleApplication1
+  cd student-rahimlii/ConsoleApplication1
   ```
 
 Add GtkSharp package:
