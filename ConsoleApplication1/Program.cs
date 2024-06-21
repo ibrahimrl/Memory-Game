@@ -6,7 +6,8 @@ public class Game
 {
     public int[] CardValues { get; private set; }
     public bool[] MatchedCards { get; private set; }
-
+    
+    // Constructor initializes the game with a specific number of cards
     public Game(int numberOfCards)
     {
         CardValues = new int[numberOfCards];
@@ -14,6 +15,7 @@ public class Game
         InitializeCards(numberOfCards);
     }
     
+    // Initializes the cards with random, non-repeating pairs of numbers
     private void InitializeCards(int numberOfCards)
     {
         int halfNumberOfCards = numberOfCards / 2;
@@ -36,6 +38,7 @@ public class Game
         ShuffleCards(CardValues);
     }
     
+    // Shuffles the cards to randomize their positions
     private void ShuffleCards(int[] array)
     {
         Random rng = new Random();
@@ -68,6 +71,7 @@ public class MemoryGame : Gtk.Window
     private bool isWaiting = false;
     private VBox vbox;
     
+    // Constructor sets up the window and UI elements
     public MemoryGame() : base("Memory Game")
     {
         SetDefaultSize(1350, 800);
@@ -129,12 +133,12 @@ public class MemoryGame : Gtk.Window
         alignStart.Add(btnStart);
         btnStart.Clicked += OnStartClicked;
         vbox.PackStart(alignStart, false, false, 10);
-        
-        Label lblSetting = new Label("CHOOSE A GAME SETTING") { Name = "gameSettingLabel" };
+
+        Label lblSetting = new Label("CHOOSE A GAME SETTING") {Name = "gameSettingLabel"};
         Alignment alignLabel = new Alignment(0.5f, 0.5f, 0, 0);
         alignLabel.Add(lblSetting);
         vbox.PackStart(alignLabel, false, false, 10);
-        
+
         HBox hbox = new HBox(true, 10);
         btnTimer = new Button("Timer");
         btnAttempts = new Button("Limited Attempts");
@@ -142,22 +146,23 @@ public class MemoryGame : Gtk.Window
         btnAttempts.Clicked += (sender, e) => ToggleButton(sender, "Limited Attempts");
         hbox.PackStart(btnTimer, true, true, 0);
         hbox.PackStart(btnAttempts, true, true, 0);
-        
+
         vbox.Remove(hbox);
         Alignment alignHbox = new Alignment(0.5f, 0.5f, 0, 0);
         alignHbox.Add(hbox);
         vbox.PackStart(alignHbox, false, false, 10);
-        
-        
-        lblTimer = new Label("Remaining Time: 00:40") { Name = "timerLabel" };
+
+
+        lblTimer = new Label("Remaining Time: 00:40") {Name = "timerLabel"};
         lblTimer.Hide();
-        
-        lblAttempts = new Label("Remaining Attempts: --") { Name = "attemptsLabel" };
+
+        lblAttempts = new Label("Remaining Attempts: --") {Name = "attemptsLabel"};
         lblAttempts.Hide();
 
         ShowAll();
     }
     
+    // Toggles between timer and limited attempts modes based on button clicks
     private void ToggleButton(object sender, string setting)
     {
         btnTimer.Name = setting == "Timer" ? "grey" : "default";
@@ -166,6 +171,7 @@ public class MemoryGame : Gtk.Window
         isAttemptMode = setting == "Limited Attempts";
     }
     
+    // Initializes the game environment and game level when the start button is clicked
     private void OnStartClicked(object sender, EventArgs e)
     {
         ResetGameEnvironment();
@@ -189,6 +195,7 @@ public class MemoryGame : Gtk.Window
         }
     }
     
+    // Resets the game environment to initial state
     private void ResetGameEnvironment()
     {
         
@@ -207,6 +214,7 @@ public class MemoryGame : Gtk.Window
         }
     }
     
+    // Initializes the card grid and game state for the specified level
     private void InitializeGameLevel(int level)
     {
         
@@ -260,6 +268,7 @@ public class MemoryGame : Gtk.Window
         ShowAll();
     }
     
+    // Starts or resets the timer for game countdown
     private void StartTimer(int seconds)
     {
         remainingTime = seconds;
@@ -269,6 +278,7 @@ public class MemoryGame : Gtk.Window
         timerId = GLib.Timeout.Add(1000, new GLib.TimeoutHandler(UpdateTimer));
     }
     
+    // Updates the timer every second and handles timeout condition
     private bool UpdateTimer()
     {
         remainingTime--;
@@ -283,21 +293,17 @@ public class MemoryGame : Gtk.Window
         return true;
     }
     
+    // Displays the game over dialog and resets the game
     private void GameOver()
     {
-        MessageDialog dialog = new MessageDialog(this, DialogFlags.Modal, MessageType.Info, ButtonsType.Ok, "Time's up! Game over.");
+        MessageDialog dialog = new MessageDialog(this, DialogFlags.Modal, MessageType.Info, ButtonsType.Ok, "Game over.");
         dialog.Run();
         dialog.Destroy();
         ResetGameEnvironment();
         new MemoryGame();
     }
 
-    private void ResetTimer(int additionalTime)
-    {
-        GLib.Source.Remove(timerId);
-        StartTimer(remainingTime + additionalTime);
-    }
-
+    // Calculates the number of cards per row based on the level
     private int CalculateCardsPerRow(int level)
     {
         switch (level)
@@ -311,6 +317,7 @@ public class MemoryGame : Gtk.Window
         }
     }
 
+    // Calculates the number of rows of cards based on the level
     private int CalculateNumberOfRows(int level)
     {
         switch (level)
@@ -324,6 +331,7 @@ public class MemoryGame : Gtk.Window
         }
     }
     
+    // Calculates the appropriate card size based on the grid dimensions
     private (int width, int height) CalculateCardSize(int cardsPerRow, int numberOfRows)
      {
          int maxWidth = 1000;  // Maximum total width available
@@ -346,18 +354,17 @@ public class MemoryGame : Gtk.Window
          return (finalCardWidth, finalCardHeight);
      }
     
+    // Creates a pixbuf for the card back image based on the specified dimensions
     private Gdk.Pixbuf CreateCardBackPixbuf(int width, int height)
     {
         Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
         return originalPixbuf.ScaleSimple(width, height, Gdk.InterpType.Bilinear);
     }
 
+    // Initializes and places cards within the grid
     private void InitializeCards(Grid cardGrid, int rows, int cardsPerRow)
     {
         (int cardWidth, int cardHeight) = CalculateCardSize(CalculateCardsPerRow(5), CalculateNumberOfRows(5));
-
-        // Gdk.Pixbuf originalPixbuf = new Gdk.Pixbuf("img/Card.jpg");
-        // Gdk.Pixbuf cardBackPixbuf = originalPixbuf.ScaleSimple(cardWidth, cardHeight, Gdk.InterpType.Bilinear);
         
         Gdk.Pixbuf cardBackPixbuf = CreateCardBackPixbuf(cardWidth, cardHeight);
 
@@ -381,6 +388,7 @@ public class MemoryGame : Gtk.Window
         }
     }
 
+    // Handles card click events to flip cards and check for matches
     private void OnCardClicked(object sender, EventArgs e)
     {
         if (isWaiting) return;  // Prevent interaction while waiting
@@ -450,6 +458,7 @@ public class MemoryGame : Gtk.Window
         }
     }
     
+    // Checks if all cards have been successfully matched
     private bool AllCardsMatched()
     {
     foreach (bool matched in game.MatchedCards)
@@ -459,6 +468,7 @@ public class MemoryGame : Gtk.Window
     return true;
     }
     
+    // Checks game progress and handles level transitions
     private void CheckGameProgress()
     {
         if (AllCardsMatched())
@@ -474,6 +484,7 @@ public class MemoryGame : Gtk.Window
         }
     }
     
+    // Displays a congratulatory message when the game is won
     private void ShowGameWonMessage()
     {
         MessageDialog winDialog = new MessageDialog(
@@ -489,7 +500,7 @@ public class MemoryGame : Gtk.Window
         new MemoryGame();
     }
 
-
+    // Adds a button to proceed to the next level
     private void AddNextLevelButton()
     {
     Button nextLevelButton = new Button("Next Level") { Name = "nextLevel" };
@@ -501,8 +512,9 @@ public class MemoryGame : Gtk.Window
     };
     vbox.PackEnd(nextLevelButton, false, false, 0);
     ShowAll();
-}
+    }
     
+    // Flips a card back to its back image
     private void FlipCardBack(Button card)
     {
         Image cardImage = card.Child as Image;
@@ -513,6 +525,7 @@ public class MemoryGame : Gtk.Window
         }
     }
 
+    // Creates a pixbuf with text for displaying card values
     private Gdk.Pixbuf CreateTextPixbuf(string text, int width, int height)
     {
         // Create a new Pixbuf with a white background
@@ -543,6 +556,7 @@ public class MemoryGame : Gtk.Window
         return pixbuf;
     }
 
+    // Entry point for the application
     public static void Main()
     {
         Application.Init();
