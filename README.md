@@ -27,6 +27,43 @@ The project is structured into several key components, utilizing various classes
 5. Assets:
     - img Folder: Contains the image files used within the game and the README file.
 
+## Function Descriptions
+
+### Game Class Functions
+
+- **`Constructor (Game)`**: Initializes a new game instance by setting the number of cards and calling the method to initialize and shuffle card values.
+- **`InitializeCards`**: Fills the `CardValues` array with pairs of matching numbers, ensuring that each pair appears twice and that all pairs are unique. This setup is crucial for the matching game logic.
+- **`ShuffleCards`**: Randomizes the order of elements within the `CardValues` array to ensure that the game board has a random layout each time a game starts.
+
+### MemoryGame Class Functions
+
+- **`Constructor (MemoryGame)`**: Initializes the main game window, sets up the UI elements, and attaches events.
+- **`ToggleButton`**: Switches game modes between timer and limited attempts based on user selection.
+- **`OnStartClicked`**: Triggers the start of the game, setting up the environment and initializing the first level based on the selected mode.
+- **`ResetGameEnvironment`**: Clears any existing game state and prepares the environment for a new game or level.
+- **`InitializeGameLevel`**: Sets up the card grid and initializes gameplay for the specified level, arranging the cards and setting mode-specific parameters.
+- **`StartTimer`**: Initiates a countdown timer for the current level, updating the UI accordingly.
+- **`UpdateTimer`**: Decrements the timer each second, and handles the time expiration by calling `GameOver`.
+- **`GameOver`**: Displays a game over dialog and resets the game environment upon failure or timer run out.
+- **`ResetTimer`**: Resets the game timer, typically called when moving to a new level.
+- **`CalculateCardsPerRow`**: Determines the number of cards per row based on the current game level.
+- **`CalculateNumberOfRows`**: Calculates the number of rows for cards based on the current level.
+- **`CalculateCardSize`**: Computes the size of each card to fit them appropriately within the UI grid based on available space.
+- **`CreateCardBackPixbuf`**: Generates a graphical representation of the card back using a Pixbuf, resized according to card dimensions.
+- **`InitializeCards`**: Populates the game grid with clickable card buttons, assigning values and images.
+- **`OnCardClicked`**: Handles the card flip action, checking for matches or enforcing game rules (like decrementing attempts).
+- **`AllCardsMatched`**: Checks if all card pairs have been successfully matched, used to determine level completion.
+- **`CheckGameProgress`**: Assesses whether the current level is complete and either progresses to the next level or ends the game if all levels are completed.
+- **`ShowGameWonMessage`**: Displays a congratulatory message upon winning the game.
+- **`AddNextLevelButton`**: Adds a button to the UI allowing the player to proceed to the next level upon successful completion of the current one.
+- **`FlipCardBack`**: Reverses a card to show its back after an unsuccessful match attempt or upon resetting the game.
+- **`CreateTextPixbuf`**: Creates a Pixbuf containing text for displaying numbers on the card faces during gameplay.
+
+### Program Entry Point
+
+- **`Main`**: Entry point for the application which initializes and runs the memory game.
+
+
 ## Setup
 
 To run this project, ensure you have set up the required environment:
